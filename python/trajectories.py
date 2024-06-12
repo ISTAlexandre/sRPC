@@ -10,7 +10,7 @@ import ROOT
 from array import array
 import string
 
-start_min = time.time()
+#start_min = time.time()
 ROOT.gROOT.SetBatch(True)
 
 parser = argparse.ArgumentParser(prog = "T_strips",
@@ -318,8 +318,8 @@ rc = inshalla/(Area*denominador*integrated_luminosity_ratio) *10**9
 with open("src/flux.asc", 'a') as asc:
     asc.write(f"{rc} {inshalla} {tempo} {integrated_luminosity_ratio} {args.input_file} {eff_list[0]} {eff_list[1]} {eff_list[2]} {eff_list[3]} {denominador} \n")
 
-end_min = time.time()
-print((end_min-start_min)//60)
+#end_min = time.time()
+#print((end_min-start_min)//60)
 
 print(1-miss_list[0]/total_list[0])
 print(1-miss_list[1]/total_list[1])

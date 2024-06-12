@@ -29,11 +29,13 @@ all_tuple2 = [[] for _ in range(64)]
 all_tuple_TB = [[] for _ in range(64)]
 all_tuple_TF = [[] for _ in range(64)]
 
-def create_cdf(hist):
+def create_cdf(hist,cdf_hist):
     num_bins = hist.GetNbinsX() #Bins x 700
     total_entries = hist.GetEntries() #Numero de entradas
     
-    cdf_hist = ROOT.TH1D(hist.GetName() + "_cdf", hist.GetTitle() + " CDF", num_bins, 0, 1)
+    cdf_hist.SetName(hist.GetName()+"_cdf")
+    cdf_hist.SetTitle(hist.GetTitle()+" CDF")
+    cdf_hist.SetBins(num_bins,0,1)
     
     cumulative_sum = 0.0
     for i in range(1, num_bins + 1):
@@ -158,7 +160,9 @@ tuple_index = 1
 
 hist1 = ROOT.TH1F("hist1","QB"+ str(tuple_index), 700,0,700)
 hist1.SetLineWidth(3)
-hist1.GetXaxis().SetTitle("QB")
+
+cdf_hist = ROOT.TH1D(hist1.GetName() + "_cdf", hist1.GetTitle() + " CDF", 700, 0, 1)
+cdf_hist.SetLineWidth(3)
 
 graph1 = ROOT.TGraph()
 graph1.GetXaxis().SetLimits(0, 1)
@@ -182,10 +186,9 @@ with open("src/offsetB.asc", "w") as asc:
         canvas.Update()
         canvas.SaveAs("offset/QStrips/B/"+ str(tuple_index)+".png")
 
-        cdf_hist1 = create_cdf(hist1)
+        cdf_hist = create_cdf(hist1,cdf_hist)
 
-        cdf_hist1.SetMarkerSize(100000)
-        cdf_hist1.Draw("L")
+        cdf_hist.Draw("L")
         linear_func.Draw("SAME")
       
         canvas.Update()
@@ -193,9 +196,9 @@ with open("src/offsetB.asc", "w") as asc:
     
         # Create a TGraph to store the points
 
-        for i in range(1, cdf_hist1.GetNbinsX() + 1):
-            bin_content = cdf_hist1.GetBinContent(i)
-            x_value = cdf_hist1.GetXaxis().GetBinCenter(i)
+        for i in range(1, cdf_hist.GetNbinsX() + 1):
+            bin_content = cdf_hist.GetBinContent(i)
+            x_value = cdf_hist.GetXaxis().GetBinCenter(i)
             y_value = bin_content
             
             # Calculate distance from y = x line
@@ -220,8 +223,21 @@ with open("src/offsetB.asc", "w") as asc:
         
         graph1.Set(0)
         hist1.Reset()
+        cdf_hist.Reset()
 
 tuple_index = 1
+
+hist1 = ROOT.TH1F("hist1","QF"+ str(tuple_index), 700,0,700)
+hist1.SetLineWidth(3)
+
+cdf_hist = ROOT.TH1D(hist1.GetName() + "_cdf", hist1.GetTitle() + " CDF", 700, 0, 1)
+cdf_hist.SetLineWidth(3)
+
+graph1 = ROOT.TGraph()
+graph1.GetXaxis().SetLimits(0, 1)
+graph1.SetMinimum(0)
+graph1.SetMaximum(1)
+graph1.SetLineWidth(3)
 
 with open("src/offsetF.asc", "w") as asc:
     asc.write(f"OFFSET_PER_STRIP_PER_PLANE\n")
@@ -238,18 +254,17 @@ with open("src/offsetF.asc", "w") as asc:
         canvas.Update()
         canvas.SaveAs("offset/QStrips/F/"+ str(tuple_index)+".png")
 
-        cdf_hist1 = create_cdf(hist1)
+        cdf_hist = create_cdf(hist1,cdf_hist)
 
-        cdf_hist1.SetMarkerSize(100000)
-        cdf_hist1.Draw("L")
+        cdf_hist.Draw("L")
         linear_func.Draw("SAME")
 
         canvas.Update()
         canvas.SaveAs("offset/CDF/F/"+ str(tuple_index)+".png")
 
-        for i in range(1, cdf_hist1.GetNbinsX() + 1):
-            bin_content = cdf_hist1.GetBinContent(i)
-            x_value = cdf_hist1.GetXaxis().GetBinCenter(i)
+        for i in range(1, cdf_hist.GetNbinsX() + 1):
+            bin_content = cdf_hist.GetBinContent(i)
+            x_value = cdf_hist.GetXaxis().GetBinCenter(i)
             y_value = bin_content
             
             # Calculate distance from y = x line
@@ -273,6 +288,7 @@ with open("src/offsetF.asc", "w") as asc:
         graph1.Set(0)
         hist1.Reset()
         tuple_index += 1
+        cdf_hist.Reset()
 
 with open("src/Q_offset.asc", "w") as asc:
     asc.write(f"TOFFSET_PER_STRIP_PER_PLANE OTHER_TIME\n")

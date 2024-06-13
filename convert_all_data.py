@@ -53,11 +53,13 @@ if __name__ == "__main__":
             execute_command(command)
             print("QB2 DONE!")
             
+            '''
             command = "python3 python/TH2D_planes.py data_ready/"+file
             execute_command(command)
             print("N_HITS DRAWN")
+            '''
 
-            command = "python3 python/trajectories.py data_ready/"+file
+            command = "python3 python/trajectories2.py data_ready/"+file
             execute_command(command)
             print("efficiency drawn")
 

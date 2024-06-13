@@ -9,7 +9,7 @@ import ROOT
 from array import array
 import string
 
-start_time = time.time()
+#start_time = time.time()
 ROOT.gROOT.SetBatch(True)
 start_time = time.time()
 parser = argparse.ArgumentParser(prog = "TH2D_planes",
@@ -315,7 +315,7 @@ with open("src/Q_offset.asc", "w") as asc:
 
         hist.Reset()
 
-end_time = time.time()
+#end_time = time.time()
 
-print((end_time-start_time)//60)
+#print((end_time-start_time)//60)
 file.Close()

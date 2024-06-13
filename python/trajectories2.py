@@ -25,49 +25,28 @@ lum.set_index('time', inplace=True)
 
 def help(histogram,hist2):
     new_hist = ROOT.TH2D("new_hist", "2D Histogram", 16, 0, 288,72, 0, 400)
-    xaxis = histogram.GetXaxis()
-    yaxis = histogram.GetYaxis()
 
-    nx = xaxis.GetNbins()
-    ny = yaxis.GetNbins()
-
-    sum_ = 0
-    _sum = 0
     tuple_dic1 = {}
     tuple_dic2 = {}
-    for i in range(1, nx + 1):
-        for j in range(1, ny + 1):
+    for i in range(1, histogram.GetNbinsX() + 1):
+        for j in range(1, histogram.GetNbinsY() + 1):
             x = histogram.GetXaxis().GetBinCenter(i)
             y = histogram.GetYaxis().GetBinCenter(j)
             z = histogram.GetBinContent(i, j)
             tuple_dic1[(x,y)] = z
-    
-    xaxis = hist2.GetXaxis()
-    yaxis = hist2.GetYaxis()
 
-    nx = xaxis.GetNbins()
-    ny = yaxis.GetNbins()
-
-    for i in range(1, nx+ 1):
-        for j in range(1, ny + 1):
+    for i in range(1, hist2.GetNbinsX() + 1):
+        for j in range(1, hist2.GetNbinsY() + 1):
             x = hist2.GetXaxis().GetBinCenter(i)
             y = hist2.GetYaxis().GetBinCenter(j)
             z = hist2.GetBinContent(i,j)
             tuple_dic2[(x,y)] = z
-    for coords in tuple_dic1:
-        if coords in tuple_dic2 and tuple_dic1[coords] != 0:
-            new_hist.Fill(coords[0],coords[1],1-tuple_dic2[coords]/tuple_dic1[coords])
-            sum_ += (1-tuple_dic2[coords]/tuple_dic1[coords])
-            _sum += 1
-        if coords in tuple_dic2 and tuple_dic1[coords] == 0:
-            new_hist.Fill(coords[0],coords[1],0.01)
-        if coords not in tuple_dic2 and tuple_dic1[coords] != 0:
-            new_hist.Fill(coords[0],coords[1],1)
-            sum_ += 1
-            _sum += 1
-        if coords not in tuple_dic2 and tuple_dic1[coords] == 0:
-            continue
-    return new_hist, sum_/_sum
+    for coords in tuple_dic2:
+        if tuple_dic2[coords] !=0:
+            new_hist.Fill(coords[0],coords[1],tuple_dic1[coords]/tuple_dic2[coords])
+        #if coords not in tuple_dic1:
+            #print("ERROR")
+    return new_hist
 
 list_dic = [{} for _ in range(4)]
 list_dic_t = [{} for _ in range(4)]
@@ -211,6 +190,28 @@ with open("src/parameters.asc", "a") as asc, open("src/parameters2.asc", "a") as
                     #if 0<= strip_intercept <= 288 and 0 <= time_intercept <=400 and 0 <= strip_intercept + 51*strip_slope <= 288 and 0 <= time_intercept + 51*time_slope<=400:
                     asc2.write(f"{strip_intercept} {strip_slope} {strip_intercept_error} {strip_slope_error}\n")
                     asc.write(f"{time_intercept} {time_slope} {time_intercept_error} {time_slope_error}\n")
+
+                    if graph.GetN() == 4:
+                        for plane in range(4):
+                            strip = plane*strip_slope*17+strip_intercept
+                            ttime = plane*time_slope*17+time_intercept
+
+                            strip = round(strip,2)
+                            ttime = round(ttime,2)
+                            total_list[plane] += 1    
+                            miss_list[plane] += 1
+
+                            if (strip,ttime) not in list_dic_t[plane]:
+                                list_dic_t[plane][(strip,ttime)] = 1
+                            if (strip,ttime) in list_dic_t[plane]:
+                                list_dic_t[plane][(strip,ttime)] += 1
+                            
+                            if (strip,ttime) not in list_dic[plane]:
+                                list_dic[plane][(strip,ttime)] = 1
+                            if (strip,ttime) in list_dic[plane]:
+                                list_dic[plane][(strip,ttime)] += 1
+
+                            
                     if graph.GetN() == 3:
                         for t in range(4):
                             if t not in plane_coordinates:
@@ -223,47 +224,30 @@ with open("src/parameters.asc", "a") as asc, open("src/parameters2.asc", "a") as
                         time_miss = round(time_miss,2)
 
                         miss_list[plane_miss] += 1
-                        #graph.SetPoint(4,plane_miss*17,time_coords)
-                        #graph2.SetPoint(4,plane_miss*17,strip_coords)
+
                         if (strip_miss,time_miss) not in list_dic[plane_miss]:
                             list_dic[plane_miss][(strip_miss,time_miss)] = 1
                         if (strip_miss,time_miss) in list_dic[plane_miss]:
                             list_dic[plane_miss][(strip_miss,time_miss)] += 1
-                    '''
-                    for plane in range(4):
-                        x_coord, t_coord = get_point_coordinates(graph, plane)
-                        y_coord, s_coord = get_point_coordinates(graph2, plane)
-                        strip = int(s_coord/18)
-                        ttime = int(t_coord/(600/108))
-                        total_list[plane][ttime,strip] +=1
-                    '''        
-                    for plane in range(4):
-                        strip = plane*strip_slope*17+strip_intercept
-                        ttime = plane*time_slope*17+time_intercept
 
-                        strip = round(strip,2)
-                        ttime = round(ttime,2)
-                        total_list[plane] += 1    
-
-                        if (strip,ttime) not in list_dic_t[plane]:
-                            list_dic_t[plane][(strip,ttime)] = 1
-                        if (strip,ttime) in list_dic_t[plane]:
-                            list_dic_t[plane][(strip,ttime)] += 1
                 graph.Set(0)
                 graph2.Set(0)
                     
+a = total_list[0]/miss_list[0]
+b = total_list[1]/miss_list[1]
+c = total_list[2]/miss_list[2]
+d = total_list[3]/miss_list[3]
 
-eff_list = []
+eff_list = [float(a),float(b),float(c),float(d)]
 for i in range(4):
     ehist1 = ROOT.TH2D("ehist1", "2D Histogram", 16, 0, 288,72, 0, 400)
     ehist2 = ROOT.TH2D("ehist2", "2D Histogram", 16, 0, 288,72, 0, 400)
     for square in list_dic_t[i]:
         ehist1.Fill(square[0],square[1],list_dic_t[i][square])
-        if square in list_dic[i]:
-            ehist2.Fill(square[0],square[1],list_dic[i][square])
+    for square in list_dic[i]:
+        ehist2.Fill(square[0],square[1],list_dic[i][square])
             
-    new_hist, eff = help(ehist1,ehist2)
-    eff_list.append(eff)
+    new_hist = help(ehist1,ehist2)
     ehist1.Draw("COLZ")
     canvas.Update()
     canvas.SaveAs("efficiency/T"+str(i)+".png")
@@ -321,8 +305,4 @@ with open("src/flux.asc", 'a') as asc:
 #end_min = time.time()
 #print((end_min-start_min)//60)
 
-print(1-miss_list[0]/total_list[0])
-print(1-miss_list[1]/total_list[1])
-print(1-miss_list[2]/total_list[2])
-print(1-miss_list[3]/total_list[3])
 file.Close()

@@ -45,7 +45,6 @@ if __name__ == "__main__":
             execute_command(command)
     move_root_files("data/","data_ready/")
 
-
     files = os.listdir("data_ready/")
     for file in files:
         if file.endswith('.root'):
@@ -53,11 +52,11 @@ if __name__ == "__main__":
             execute_command(command)
             print("QB2 DONE!")
             
-            '''
-            command = "python3 python/TH2D_planes.py data_ready/"+file
-            execute_command(command)
-            print("N_HITS DRAWN")
-            '''
+            
+            #command = "python3 python/TH2D_planes.py data_ready/"+file
+            #execute_command(command)
+            #print("N_HITS DRAWN")
+            
 
             command = "python3 python/trajectories2.py data_ready/"+file
             execute_command(command)

@@ -68,7 +68,10 @@ def get_point_coordinates(graph, point_index):
 
 contagem = 0
 
-with open("src/parameters.asc", "a") as asc, open("src/parameters2.asc", "a") as asc2:
+with open("src/parameters.asc", "w") as asc, open("src/parameters2.asc", "w") as asc2:
+    asc2.write(f"Intercept Slope Intercept_Error Slope_Error\n")
+    asc.write(f"Intercept Slope Intercept_Error Slope_Error\n")
+
     graph = ROOT.TGraphErrors()
     graph2 = ROOT.TGraphErrors()
     graph.SetTitle("Coordinates for each hit")
@@ -281,21 +284,27 @@ month = start_date.month
 day = start_date.day
 
 # Create the datetime object
-start_time = datetime.datetime(year, month, day, hour, minute, second)
+start_time = datetime.datetime(year, month, day, hour-1, minute, second)
 
 # Format the datetime object as a string
 formatted_time = start_time.strftime("%Y-%m-%d %H:%M:%S")
 
 start_time = pd.Timestamp(formatted_time)
-end_time = start_time + pd.Timedelta(minutes=tempo//60)
-start_time2 = start_time.round('min')
-end_time2 = end_time.round('min')
+end_time = start_time + pd.Timedelta(minutes=tempo/60)
+start_time2 = start_time.floor('min')
+end_time2 = end_time.floor('min')
 
 filtered_lum = lum.loc[start_time2:end_time2]
-int1 = filtered_lum['Lum'].iloc[0]*(60-start_time.second)
-int2 = filtered_lum['Lum'].iloc[1]*(tempo-60+start_time.second)
+integrated_luminosity_ratio = 0
+for i in range(len(filtered_lum["Lum"])):
+    if i == 0:
+        il = filtered_lum["Lum"].iloc[i]*(60-start_time.second)
+    if i == len(filtered_lum["Lum"]) -1:
+        il = filtered_lum["Lum"].iloc[i]*(end_time.second)
+    if i != 0 and i != len(filtered_lum["Lum"]) -1:
+        il = filtered_lum["Lum"].iloc[i]*60
+    integrated_luminosity_ratio += il
 
-integrated_luminosity_ratio = int1 + int2
 
 rc = contagem/(Area*denominador*integrated_luminosity_ratio) *10**9
 

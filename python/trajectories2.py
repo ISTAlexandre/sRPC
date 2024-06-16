@@ -309,7 +309,7 @@ for i in range(len(filtered_lum["Lum"])):
 rc = contagem/(Area*denominador*integrated_luminosity_ratio) *10**9
 
 with open("src/flux.asc", 'a') as asc:
-    asc.write(f"{rc} {contagem} {tempo} {integrated_luminosity_ratio} {args.input_file} {eff_list[0]} {eff_list[1]} {eff_list[2]} {eff_list[3]} {denominador} \n")
+    asc.write(f"{rc} {contagem} {tempo} {integrated_luminosity_ratio} {args.input_file} {eff_list[0]} {eff_list[1]} {eff_list[2]} {eff_list[3]} {denominador}\n")
 
 #end_min = time.time()
 #print((end_min-start_min)//60)

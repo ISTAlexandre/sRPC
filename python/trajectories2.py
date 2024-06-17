@@ -54,7 +54,7 @@ list_dic_t = [{} for _ in range(4)]
 file = ROOT.TFile.Open(args.input_file, "READ")
 tree = file.Get("sRPCdata")
 #histograma.SetStats(0)
-canvas = ROOT.TCanvas("canvas", "2D Histogram Example", 800, 600)
+canvas = ROOT.TCanvas("canvas", "2D Histogram Example", 600, 800)
 
 df = pd.read_csv("src/offsetF.asc", delimiter=" ", header=0)
 db = pd.read_csv("src/offsetB.asc", delimiter=" ", header=0)

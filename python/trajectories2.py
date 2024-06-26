@@ -4,6 +4,9 @@ import os
 import time
 import datetime
 
+from itertools import combinations
+import math
+from ctypes import c_double
 import pandas as pd
 import numpy as np
 import ROOT
@@ -11,6 +14,7 @@ from array import array
 import string
 
 #start_min = time.time()
+
 ROOT.gROOT.SetBatch(True)
 
 parser = argparse.ArgumentParser(prog = "T_strips",
@@ -69,28 +73,55 @@ def get_point_coordinates(graph, point_index):
 contagem = 0
 
 with open("src/parameters.asc", "w") as asc, open("src/parameters2.asc", "w") as asc2:
-    asc2.write(f"Intercept Slope Intercept_Error Slope_Error\n")
-    asc.write(f"Intercept Slope Intercept_Error Slope_Error\n")
+    asc2.write(f"Intercept Slope Intercept_Error Slope_Error Reduced_CHI Get_N\n")
+    asc.write(f"Intercept Slope Intercept_Error Slope_Error Reduced_CHI Get_N\n")
 
-    graph = ROOT.TGraphErrors()
+    graph = ROOT.TGraph()
     graph2 = ROOT.TGraphErrors()
     graph.SetTitle("Coordinates for each hit")
     graph2.SetTitle("Coordinates for each hit")
     graph.GetXaxis().SetLimits(0, 51)
     graph.SetMinimum(0)
     graph.SetMaximum(400)
-    graph.SetMarkerSize(10)
+    graph.SetMarkerSize(1)
+    graph.SetMarkerStyle(20)
+
+    graph_temp = ROOT.TGraph()
+    graph2_temp = ROOT.TGraphErrors()
+    graph_temp.SetTitle("Coordinates for each hit")
+    graph2_temp.SetTitle("Coordinates for each hit")
+
+    graph_temp.GetXaxis().SetRangeUser(0, 51)
+    graph_temp.SetMinimum(0)
+    graph_temp.SetMaximum(400)
+    graph_temp.SetMarkerSize(1)
+    graph_temp.SetLineWidth(1)
+    graph_temp.SetMarkerStyle(20)
+
+    graph2_temp.GetXaxis().SetRangeUser(0, 51)
+    graph2_temp.SetMinimum(0)
+    graph2_temp.SetMaximum(288)
+    graph2_temp.SetMarkerSize(1)
+    graph2_temp.SetLineWidth(10)
+    graph2_temp.SetMarkerStyle(20)
 
     graph2.GetXaxis().SetLimits(0, 51)
     graph2.SetMinimum(0)
     graph2.SetMaximum(288)
-    graph2.SetMarkerSize(10)
+    graph2.SetMarkerSize(1)
+    graph2.SetMarkerStyle(20)
 
-    graph2.GetXaxis().SetTitle("Plane x (cm)")
+    graph2.GetXaxis().SetTitle("Plane z (cm)")
     graph2.GetYaxis().SetTitle("strip  y (mm)")
 
-    graph.GetXaxis().SetTitle("Plane x (cm)")
-    graph.GetYaxis().SetTitle("(TF-TB)/2*165.7  z (mm)")
+    graph.GetXaxis().SetTitle("Plane z (cm)")
+    graph.GetYaxis().SetTitle("(TF-TB)/2*165.7  x (mm)")
+
+    graph2_temp.GetXaxis().SetTitle("Plane z (cm)")
+    graph2_temp.GetYaxis().SetTitle("strip  y (mm)")
+
+    graph_temp.GetXaxis().SetTitle("Plane z (cm)")
+    graph_temp.GetYaxis().SetTitle("(TF-TB)/2*165.7  x (mm)")
 
     linear_func = ROOT.TF1("linear_func", "[0] + [1]*x", 0, 51)
     linear_func.SetParNames("Intercept", "Slope")
@@ -100,6 +131,9 @@ with open("src/parameters.asc", "w") as asc, open("src/parameters2.asc", "w") as
 
     miss_list = [0,0,0,0]
     total_list = [0,0,0,0]
+
+    planes_list = [0,1,2,3]
+    planes_combinations = list(combinations(planes_list, 3))
 
     for event in range(tree.GetEntries()):
         tree.GetEntry(event)
@@ -143,90 +177,165 @@ with open("src/parameters.asc", "w") as asc, open("src/parameters2.asc", "w") as
                     
                     if timet*165.7 < -200 and timet*165.7 > 200:
                         continue
-
                     graph.SetPoint(point_index,tree.plane[actual_N]*17,timet*165.7+200)
                     graph2.SetPoint(point_index,tree.plane[actual_N]*17,tree.strip[actual_N]*18)
-                    graph2.SetPointError(point_index,0,9)
+                    graph2.SetPointError(point_index,0,18/math.sqrt(12))
                     plane_coordinates.append(tree.plane[actual_N])
-                if graph.GetN() > 4:
-                    raise ValueError("MAIS DO QUE 4 VALORES")
                 if graph.GetN() > 2:
                     contagem +=1
-
-                    graph.Draw("AP")
-
-                    graph.Fit(linear_func, "Q","",0,51)
-                    linear_func.Draw("SAME")
-
-                    intercept = linear_func.GetParameter(0)
-                    slope = linear_func.GetParameter(1)
-                    intercept_error = linear_func.GetParError(0)
-                    slope_error = linear_func.GetParError(1)
-
-                    canvas.Draw()
-                    canvas.Update()
-                    
-                    time_intercept = intercept
-                    time_slope = slope
-                    time_intercept_error = intercept_error
-                    time_slope_error= slope_error
-
-                    graph2.Draw("AP")
-                    
-                    graph2.Fit(linear_func2, "Q","",0,51)
-                    linear_func2.Draw("SAME")
-
-                    #print(reduced_chi_squared2)
-
-                    intercept = linear_func2.GetParameter(0)
-                    slope = linear_func2.GetParameter(1)
-                    intercept_error = linear_func2.GetParError(0)
-                    slope_error = linear_func2.GetParError(1)
-                    
-                    canvas.Update()
-
-                    strip_intercept = intercept
-                    strip_slope = slope
-                    strip_intercept_error = intercept_error
-                    strip_slope_error = slope_error
-
-                    #if 0<= strip_intercept <= 288 and 0 <= time_intercept <=400 and 0 <= strip_intercept + 51*strip_slope <= 288 and 0 <= time_intercept + 51*time_slope<=400:
-                    asc2.write(f"{strip_intercept} {strip_slope} {strip_intercept_error} {strip_slope_error}\n")
-                    asc.write(f"{time_intercept} {time_slope} {time_intercept_error} {time_slope_error}\n")
-
                     if graph.GetN() == 4:
                         for plane in range(4):
-                            strip = plane*strip_slope*17+strip_intercept
-                            ttime = plane*time_slope*17+time_intercept
-
-                            strip = round(strip,2)
-                            ttime = round(ttime,2)
                             total_list[plane] += 1    
                             miss_list[plane] += 1
+                        for combination in planes_combinations:
+                            plane_coordinates2 = []
+                            for plane in combination:
+                                point_index = graph_temp.GetN()
 
-                            if (strip,ttime) not in list_dic_t[plane]:
-                                list_dic_t[plane][(strip,ttime)] = 1
-                            if (strip,ttime) in list_dic_t[plane]:
-                                list_dic_t[plane][(strip,ttime)] += 1
+                                x_val, y_val = c_double(0) , c_double(0)
+                                graph.GetPoint(plane, x_val, y_val)
+                                graph_temp.SetPoint(point_index, x_val, y_val)
+
+                                x_val, y_val = c_double(0) , c_double(0)
+                                graph2.GetPoint(plane, x_val, y_val)
+                                graph2_temp.SetPoint(point_index, x_val, y_val)
+                                graph2_temp.SetPointError(point_index,0,18/math.sqrt(12))
+
+                                plane_coordinates2.append(int(x_val.value//17))
+
+                            for t in range(4):
+                                if t not in plane_coordinates2:
+                                    plane_miss = t
                             
-                            if (strip,ttime) not in list_dic[plane]:
-                                list_dic[plane][(strip,ttime)] = 1
-                            if (strip,ttime) in list_dic[plane]:
-                                list_dic[plane][(strip,ttime)] += 1
+                            graph_temp.Draw("AP")
+
+                            graph_temp.Fit(linear_func, "Q","",0,51)
+                            linear_func.Draw("SAME")
+                            graph_temp.GetXaxis().SetLimits(0, 51)
+
+                            chi1 = linear_func.GetChisquare()
+                            ndf = linear_func.GetNDF()
+                            reduced_chi1 = chi1/ndf
+
+                            intercept = linear_func.GetParameter(0)
+                            slope = linear_func.GetParameter(1)
+                            intercept_error = linear_func.GetParError(0)
+                            slope_error = linear_func.GetParError(1)
+
+                            canvas.Update()
+                            canvas.Draw()
+                        
+                            time_intercept = intercept
+                            time_slope = slope
+                            time_intercept_error = intercept_error
+                            time_slope_error= slope_error
+
+                            graph2_temp.Draw("AP")
+                    
+                            graph2_temp.Fit(linear_func2, "Q","",0,51)
+                            linear_func2.Draw("SAME")
+                            graph2_temp.GetXaxis().SetLimits(0, 51)
+
+                            chi2 = linear_func2.GetChisquare()
+                            ndf = linear_func2.GetNDF()
+                            reduced_chi2 = chi2/ndf
+
+                            intercept = linear_func2.GetParameter(0)
+                            slope = linear_func2.GetParameter(1)
+                            intercept_error = linear_func2.GetParError(0)
+                            slope_error = linear_func2.GetParError(1)
+                            
+                            canvas.Update()
+
+                            strip_intercept = intercept
+                            strip_slope = slope
+                            strip_intercept_error = intercept_error
+                            strip_slope_error = slope_error
+
+                            asc2.write(f"{strip_intercept} {strip_slope} {strip_intercept_error} {strip_slope_error} {reduced_chi2} {graph.GetN()}\n")
+                            asc.write(f"{time_intercept} {time_slope} {time_intercept_error} {time_slope_error} {reduced_chi1} {graph.GetN()}\n")
+                            
+                            #if reduced_chi1 < 1000 and reduced_chi2 < 1000:
+                            
+                            strip_miss = plane_miss*17*strip_slope+strip_intercept
+                            time_miss = plane_miss*17*time_slope+time_intercept
+
+                            strip_miss = round(strip_miss,2)
+                            time_miss = round(time_miss,2)
+
+                            if (strip_miss,time_miss) not in list_dic[plane_miss]:
+                                list_dic[plane_miss][(strip_miss,time_miss)] = 1
+                            if (strip_miss,time_miss) in list_dic[plane_miss]:
+                                list_dic[plane_miss][(strip_miss,time_miss)] += 1
+
+                            if (strip_miss,time_miss) not in list_dic_t[plane_miss]:
+                                list_dic_t[plane_miss][(strip_miss,time_miss)] = 1
+                            if (strip_miss,time_miss) in list_dic_t[plane_miss]:
+                                list_dic_t[plane_miss][(strip_miss,time_miss)] += 1
+                            
+                            graph_temp.Set(0)
+                            graph2_temp.Set(0)
 
                             
                     if graph.GetN() == 3:
                         for t in range(4):
                             if t not in plane_coordinates:
                                 plane_miss = t
+                        miss_list[plane_miss] += 1
+
+                        graph.Draw("AP")
+
+                        graph.Fit(linear_func, "Q","",0,51)
+                        linear_func.Draw("SAME")
                         
+                        chi1 = linear_func.GetChisquare()
+                        ndf = linear_func.GetNDF()
+                        reduced_chi1 = chi1/ndf
+
+                        intercept = linear_func.GetParameter(0)
+                        slope = linear_func.GetParameter(1)
+                        intercept_error = linear_func.GetParError(0)
+                        slope_error = linear_func.GetParError(1)
+
+                        canvas.Draw()
+                        canvas.Update()
+
+                        time_intercept = intercept
+                        time_slope = slope
+                        time_intercept_error = intercept_error
+                        time_slope_error= slope_error
+
+                        graph2.Draw("AP")
+                
+                        graph2.Fit(linear_func2, "Q","",0,51)
+                        linear_func2.Draw("SAME")
+
+                        chi2 = linear_func2.GetChisquare()
+                        ndf = linear_func2.GetNDF()
+                        reduced_chi2 = chi2/ndf
+
+                        intercept = linear_func2.GetParameter(0)
+                        slope = linear_func2.GetParameter(1)
+                        intercept_error = linear_func2.GetParError(0)
+                        slope_error = linear_func2.GetParError(1)
+                        
+                        canvas.Update()
+
+                        strip_intercept = intercept
+                        strip_slope = slope
+                        strip_intercept_error = intercept_error
+                        strip_slope_error = slope_error
+
+                        asc2.write(f"{strip_intercept} {strip_slope} {strip_intercept_error} {strip_slope_error} {reduced_chi2} {graph.GetN()}\n")
+                        asc.write(f"{time_intercept} {time_slope} {time_intercept_error} {time_slope_error} {reduced_chi1} {graph.GetN()}\n")
+
+                        #if reduced_chi1 < 1000 and reduced_chi2 < 1000:
+                            
                         strip_miss = plane_miss*17*strip_slope+strip_intercept
                         time_miss = plane_miss*17*time_slope+time_intercept
 
                         strip_miss = round(strip_miss,2)
                         time_miss = round(time_miss,2)
-
-                        miss_list[plane_miss] += 1
 
                         if (strip_miss,time_miss) not in list_dic[plane_miss]:
                             list_dic[plane_miss][(strip_miss,time_miss)] = 1

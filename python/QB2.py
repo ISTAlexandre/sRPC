@@ -298,7 +298,8 @@ with open("src/Q_offset.asc", "w") as asc:
     for tuple_index in range(len(all_tuple_TF)):
 
         for Q_index in range(len(all_tuple_TF[tuple_index])):
-            hist.Fill((all_tuple_TB[tuple_index][Q_index]-all_tuple_TF[tuple_index][Q_index])/2)
+            if -10 < (all_tuple_TB[tuple_index][Q_index]-all_tuple_TF[tuple_index][Q_index])/2 < 10:
+                hist.Fill((all_tuple_TB[tuple_index][Q_index]-all_tuple_TF[tuple_index][Q_index])/2)
 
         n_entries_max = get_max_bin_entries(hist)
         threshold = ROOT.TF1("threshold",str(n_entries_max*0.5),-10,10)

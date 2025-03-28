@@ -28,7 +28,7 @@ ROOT.gROOT.SetBatch(True)
 folder_path = "data_ready"  # Change to your folder path
 
 # Get all files from the folder
-all_files = sorted(glob(os.path.join(folder_path, "*")))  # Sort to ensure consistent order
+all_files = sorted(glob(os.path.join(folder_path, "*.root")))  # Sort to ensure consistent order
 
 df = pd.read_csv("src/offsetF.asc", delimiter=" ", header=0)
 db = pd.read_csv("src/offsetB.asc", delimiter=" ", header=0)
@@ -157,3 +157,33 @@ for i in range(rank, len(all_files), size):
     with open("coordinates/"+str(all_files[i])[10:-5]+".asc", "w") as concluded:
         read_tree(tree_to_read,concluded)
     file.Close()
+
+if rank == 0:
+    folder_path = "coordinates"  # Change to your folder path
+    # Get all files from the folder
+    # Get all files from the folder
+    all_files = sorted(glob(os.path.join(folder_path, "*.asc")))  # Sort to ensure consistent order
+    with open("coordinates/coordinates.asc", "w") as concluded:
+        concluded.write("plane1 t1 s1 plane2 t2 s2 plane3 t3 s3 plane4 t4 s4\n")
+        for i in range(len(all_files)):
+            with open(all_files[i], "r") as file:
+                for line in file:
+                    fields = line.strip().split()
+                    if len(fields) >= 9:
+                        plane1 = fields[0]
+                        t1 = fields[1]
+                        s1 = fields[2]
+                        plane2 = fields[3]
+                        t2 = fields[4]
+                        s2 = fields[5]
+                        plane3 = fields[6]
+                        t3 = fields[7]
+                        s3 = fields[8]
+                        if len(fields) >= 12:
+                            plane4 = fields[9]
+                            t4 = fields[10]
+                            s4 = fields[11]
+                            concluded.write(f"{plane1} {t1} {s1} {plane2} {t2} {s2} {plane3} {t3} {s3} {plane4} {t4} {s4}\n")
+                        else:
+                            concluded.write(f"{plane1} {t1} {s1} {plane2} {t2} {s2} {plane3} {t3} {s3}\n")
+            #os.remove(all_files[i])               
